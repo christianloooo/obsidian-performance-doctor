@@ -59,9 +59,11 @@ const port = typeof address === 'object' && address ? address.port : 0;
 const { chromium } = await import('playwright-core');
 const browser = await chromium.launch({ executablePath: edge, headless: true });
 let batch = [];
+let browserVersion = null;
 try {
   const page = await browser.newPage();
   page.setDefaultTimeout(120000);
+  browserVersion = browser.version();
   await page.goto(`http://127.0.0.1:${port}/comparison-reliability.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => document.body.dataset.ready === '1', { timeout: 30000 });
   batch = await page.evaluate(
@@ -73,20 +75,31 @@ try {
   server.close();
 }
 
+const recordedAt = new Date().toISOString();
+for (const row of batch) {
+  row.recordedAt = recordedAt;
+  row.browserVersion = browserVersion;
+  row.protocol = 'elapsed-wall-duration';
+}
+
 const outDir = path.join(root, 'qa-local');
 mkdirSync(outDir, { recursive: true });
-const outFile = path.join(outDir, 'comparison-reliability.json');
+const outFile = path.join(outDir, 'comparison-reliability-elapsed.json');
 const prior = existsSync(outFile) ? JSON.parse(readFileSync(outFile, 'utf8')) : {
-  windowMs: 1000,
+  protocol: 'elapsed-wall-duration',
+  nominalWindowMs: 1000,
   probeIntervalMs: 80,
   strongBlockTargetMs: 40,
   trialsPerSide: 3,
+  durationMetadata: 'actual wallMs',
   rows: [],
 };
-const keys = new Set(prior.rows.map((row) => `${row.kind}:${row.index}`));
-for (const row of batch) {
-  if (!keys.has(`${row.kind}:${row.index}`)) prior.rows.push(row);
-}
+const byKey = new Map(prior.rows.map((row) => [`${row.kind}:${row.index}`, row]));
+for (const row of batch) byKey.set(`${row.kind}:${row.index}`, row);
+prior.rows = [...byKey.values()];
+prior.protocol = 'elapsed-wall-duration';
+prior.browserVersion = browserVersion;
+prior.updatedAt = recordedAt;
 writeFileSync(outFile, JSON.stringify(prior, null, 2));
 const kept = batch.filter((row) => row.kept).length;
 const claimed = batch.filter((row) => row.observedImprovement === true).length;
