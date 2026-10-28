@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Comparison reliability study</title>
+</head>
+<body>
+  <pre id="out">waiting</pre>
+  <script type="module">
+    import { compareTrials, createMeasurementSession, summarize } from './core.js';
+
+    // Disclosed synthetic window. This is not the product's 12 second recording.
+    const WINDOW_MS = 1000;
+    const PROBE_MS = 80;
+    const STRONG_BLOCK_MS = 40;
+
+    function busy(targetMs) {
+      const start = performance.now();
+      while (performance.now() - start < targetMs) {}
+      return performance.now() - start;
+    }
+
+    function pause() {
+      return new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    async function runTrial(blockTargetMs) {
+      const session = createMeasurementSession({
+        probeIntervalMs: PROBE_MS,
+        maxSamples: 40,
+        maxDurationMs: WINDOW_MS + 3000,
+      });
+      const wallStart = performance.now();
+      let injectedMs = 0;
+      let spins = 0;
+      while (performance.now() - wallStart < WINDOW_MS) {
+        if (blockTargetMs > 0) {
+          injectedMs += busy(blockTargetMs);
+          spins += 1;
+        }
+        await pause();
+      }
+      const wallMs = performance.now() - wallStart;
+      session.stop();
+      const terminal = session.getTerminal();
+      const samples = session.getSamples();
+      const summary = summarize(samples);
+      const usable = terminal.status === 'completed' && samples.length >= 8 && summary.isInconclusive === false;
+      return {
+        blockTargetMs,
+        injectedMs,
+        spins,
+        wallMs,
+        sampleCount: samples.length,
+        terminal: terminal.status,
+        terminalReason: terminal.reason ?? null,
+        summary,
+        usable,
+      };
+    }
+
+    function asComparable(trial, scenario, experimentId) {
+      return {
+        summary: trial.summary,
+        meta: {
+          platform: 'study',
+          appVersion: 'synthetic-window-1000',
+          pluginVersion: '0.1.0',
+          scenario,
+          workload: 'other-repeated-task',
+          experimentId,
+          durationMs: WINDOW_MS,
+          probeIntervalMs: PROBE_MS,
+          terminal: 'completed',
+        },
+      };
+    }
+
+    async function oneComparison(kind, index) {
+      const baselineBlock = kind === 'strong' ? STRONG_BLOCK_MS : 0;
+      const afterBlock = 0;
+      const baseline = [];
+      const after = [];
+      for (let i = 0; i < 3; i += 1) baseline.push(await runTrial(baselineBlock));
+      for (let i = 0; i < 3; i += 1) after.push(await runTrial(afterBlock));
+      const discarded = [...baseline, ...after].filter((trial) => !trial.usable);
+      if (discarded.length > 0) {
+        return {
+          kind,
+          index,
+          kept: false,
+          reason: 'trial not completed or fewer than 8 conclusive samples',
+          baseline,
+          after,
+        };
+      }
+      const comparison = compareTrials(
+        baseline.map((trial) => asComparable(trial, 'baseline', index + 1)),
+        after.map((trial) => asComparable(trial, 'after', index + 1)),
+      );
+      return {
+        kind,
+        index,
+        kept: true,
+        expectedImprovement: kind === 'strong',
+        observedImprovement: comparison.improvement === true,
+        comparison: {
+          valid: comparison.valid,
+          inconclusive: comparison.inconclusive,
+          improvement: comparison.improvement,
+          reason: comparison.reason ?? null,
+          baselineMedianP95: comparison.baselineMedianP95 ?? null,
+          afterMedianP95: comparison.afterMedianP95 ?? null,
+          deltaMedianP95: comparison.deltaMedianP95 ?? null,
+          noiseHigh: comparison.noiseHigh === true,
+        },
+        baseline,
+        after,
+      };
+    }
+
+    window.__runBatch = async (kind, count, startIndex) => {
+      const rows = [];
+      for (let i = 0; i < count; i += 1) rows.push(await oneComparison(kind, startIndex + i));
+      return rows;
+    };
+
+    document.getElementById('out').textContent = 'ready';
+    document.body.dataset.ready = '1';
+  </script>
+</body>
+</html>
