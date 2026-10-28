@@ -1,20 +1,19 @@
-import { spawnSync } from 'node:child_process';
+import { build } from 'esbuild';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const built = spawnSync(process.execPath, [
-  path.join(root, 'node_modules', 'esbuild', 'bin', 'esbuild'),
-  'src/obsidian/main.ts',
-  '--bundle',
-  '--format=cjs',
-  '--platform=node',
-  '--external:obsidian',
-  `--outfile=${path.join(root, 'tests', 'adapter-bundle.cjs')}`,
-], { cwd: root, stdio: 'inherit' });
-if (built.status !== 0) process.exit(built.status ?? 1);
+await build({
+  absWorkingDir: root,
+  entryPoints: [path.join(root, 'src', 'obsidian', 'main.ts')],
+  bundle: true,
+  format: 'cjs',
+  platform: 'node',
+  external: ['obsidian'],
+  outfile: path.join(root, 'tests', 'adapter-bundle.cjs'),
+});
 
 const notices = [];
 const opened = [];

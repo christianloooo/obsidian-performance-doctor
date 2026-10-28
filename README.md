@@ -12,7 +12,7 @@ Why this exists, and what it refuses to claim, is in [docs/approach.md](docs/app
 
 ## Install a release
 
-Download the 0.1.0 release zip. It contains only `main.js`, `manifest.json`, and `styles.css`. Copy those three files into `.obsidian/plugins/performance-doctor/` in a vault you can afford to experiment on, then turn the plugin on in Settings → Community plugins.
+Download the [0.1.0 release zip](https://github.com/christianloooo/obsidian-performance-doctor/releases/download/0.1.0/performance-doctor-0.1.0.zip). It contains only `main.js`, `manifest.json`, and `styles.css`. Copy those three files into `.obsidian/plugins/performance-doctor/` in a vault you can afford to experiment on, then turn the plugin on in Settings → Community plugins.
 
 The built files are release assets. They are not stored in git.
 
