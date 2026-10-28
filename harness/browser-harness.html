@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Performance Doctor browser checks</title>
+</head>
+<body>
+  <pre id="out">waiting</pre>
+  <script type="module">
+    import { createMeasurementSession } from './core.js';
+
+    function busy(ms) {
+      const start = performance.now();
+      while (performance.now() - start < ms) {}
+      return performance.now() - start;
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function armedBlock(blockMs) {
+      let hidden = false;
+      const session = createMeasurementSession({
+        probeIntervalMs: 40,
+        maxSamples: 80,
+        maxDurationMs: 5000,
+        isSuspended: () => hidden,
+      });
+      await wait(30);
+      const injectedMs = busy(blockMs);
+      await wait(120);
+      const during = session.getSamples().map((sample) => sample.delay);
+      session.stop();
+      return { injectedMs, during, terminal: session.getTerminal(), pendingAfterStop: session.isActive() };
+    }
+
+    async function cleanControl() {
+      const session = createMeasurementSession({ probeIntervalMs: 40, maxSamples: 20, maxDurationMs: 5000 });
+      await wait(200);
+      const delays = session.getSamples().map((sample) => sample.delay);
+      session.stop();
+      return { max: delays.length ? Math.max(...delays) : 0, count: delays.length, terminal: session.getTerminal() };
+    }
+
+    async function hideAndCancel() {
+      let hidden = false;
+      const session = createMeasurementSession({
+        probeIntervalMs: 40,
+        maxSamples: 20,
+        maxDurationMs: 5000,
+        isSuspended: () => hidden,
+      });
+      await wait(40);
+      hidden = true;
+      session.notifySuspension('hidden');
+      await wait(80);
+      hidden = false;
+      const afterHide = { terminal: session.getTerminal(), samples: session.getSamples().length, active: session.isActive() };
+      const other = createMeasurementSession({ probeIntervalMs: 40, maxSamples: 10, maxDurationMs: 5000 });
+      await wait(20);
+      other.cancel('cancelled');
+      return { afterHide, cancel: { terminal: other.getTerminal(), active: other.isActive(), samples: other.getSamples().length } };
+    }
+
+    const control = await cleanControl();
+    const blocks = {};
+    for (const ms of [75, 150, 300]) blocks[ms] = await armedBlock(ms);
+    const invalid = await hideAndCancel();
+    const result = { control, blocks, invalid };
+    document.querySelector('#out').textContent = JSON.stringify(result);
+    document.body.dataset.done = '1';
+    window.__HARNESS__ = result;
+  </script>
+</body>
+</html>

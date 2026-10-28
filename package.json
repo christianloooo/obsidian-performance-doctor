@@ -1,0 +1,35 @@
+{
+  "name": "obsidian-performance-doctor",
+  "version": "0.1.0",
+  "description": "Experimental prerelease. Measure a slowdown, then test whether one manual change helped. Not a production release.",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "npm run typecheck && node esbuild.config.mjs production",
+    "build:harness-core": "node esbuild.config.mjs --harness-core",
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/run-regression.mjs && node tests/run-adapter.mjs",
+    "test:browser": "node tests/run-browser-harness.mjs",
+    "bench": "node tests/run-bench.mjs",
+    "bench:browser": "node tests/run-browser-bench.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "performance",
+    "responsiveness",
+    "measurement"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/christianloooo/obsidian-performance-doctor"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.17",
+    "esbuild": "0.25.5",
+    "obsidian": "latest",
+    "playwright-core": "^1.55.0",
+    "typescript": "^5.8.3"
+  }
+}

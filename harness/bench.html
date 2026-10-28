@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Performance Doctor benchmark</title>
+</head>
+<body>
+  <pre id="out">running</pre>
+  <script type="module">
+    import { runPairedBenchmark } from './core.js';
+    const result = await runPairedBenchmark();
+    document.querySelector('#out').textContent = JSON.stringify(result);
+    document.body.dataset.done = '1';
+    window.__BENCH__ = result;
+  </script>
+</body>
+</html>

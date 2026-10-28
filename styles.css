@@ -1,0 +1,55 @@
+.mod-pd,
+.mod-pd .modal-title,
+.mod-pd .modal-content,
+.mod-pd button,
+.mod-pd p {
+  font-family: var(--font-interface);
+}
+
+.pd-lead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-2);
+}
+
+.pd-icon {
+  --icon-size: 18px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--icon-color);
+  margin-top: 1px;
+}
+
+.pd-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--size-4-2);
+  margin: var(--size-4-3) 0;
+}
+
+.pd-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+
+.pd-prose p,
+.pd-note,
+.mod-pd p {
+  white-space: normal;
+  overflow-wrap: break-word;
+  margin: 0 0 0.75em;
+}
+
+.pd-report {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  user-select: text;
+  font-family: var(--font-monospace);
+}

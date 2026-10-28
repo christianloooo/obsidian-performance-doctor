@@ -1,0 +1,10 @@
+{
+  "id": "performance-doctor",
+  "name": "Performance Doctor",
+  "version": "0.1.0",
+  "minAppVersion": "1.14.5",
+  "description": "Records foreground scheduling delay while you reproduce lag, compares repeated manual before/after trials, and previews a redacted report. Separate vault inventory uses file stats only. No automatic plugin changes.",
+  "author": "Performance Doctor contributors",
+  "authorUrl": "https://github.com/christianloooo/obsidian-performance-doctor",
+  "isDesktopOnly": true
+}
